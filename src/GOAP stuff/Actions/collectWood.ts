@@ -1,8 +1,8 @@
 import { Action, ActionCompleteEvent, Actor, Blink, Entity } from "excalibur";
 import { GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate } from "../GOAP";
-import { tree } from "../Actors/Tree";
-import { player } from "../Actors/Player";
-import { world } from "../world";
+import { tree } from "../../Actors/Tree";
+import { player } from "../../Actors/Player";
+import { world } from "../World/world";
 
 const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
   return new Promise(resolve => {

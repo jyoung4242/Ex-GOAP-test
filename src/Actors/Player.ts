@@ -1,7 +1,7 @@
 import { ActorArgs, Color, Engine, Label, Vector } from "excalibur";
-import { GoapAction, GoapAgent, GoapAgentConfig, actionstate } from "../GOAP";
-import { world } from "../world";
-import { goal, resetGoal, waitGoal } from "../Goal";
+import { GoapAction, GoapAgent, GoapAgentConfig, actionstate } from "../GOAP stuff/GOAP";
+import { world } from "../GOAP stuff/World/world";
+import { goal, resetGoal, waitGoal } from "../GOAP stuff/Goals/Goal";
 
 const playerActorConfig: ActorArgs = {
   pos: new Vector(300, 250),

@@ -3,7 +3,7 @@ import "./style.css";
 import { UI } from "@peasy-lib/peasy-ui";
 import { Engine, DisplayMode, KeyEvent, Debug, TestClock } from "excalibur";
 import { player, fire, tree } from "./Actors";
-import { waitAction, moveToFireAction, moveToTreeAction, feedFireAction, collectWoodAction, resetAction } from "./Actions";
+import { waitAction, moveToFireAction, moveToTreeAction, feedFireAction, collectWoodAction, resetAction } from "./GOAP stuff/Actions";
 
 const model = {};
 const template = `

@@ -1,7 +1,7 @@
 import { ActionCompleteEvent, EaseTo, EasingFunctions, Vector } from "excalibur";
 import { GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate } from "../GOAP";
-import { world } from "../world";
-import { player } from "../Actors";
+import { world } from "../World/world";
+import { player } from "../../Actors";
 
 const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
   return new Promise(resolve => {

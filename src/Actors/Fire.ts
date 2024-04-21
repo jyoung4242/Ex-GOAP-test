@@ -1,5 +1,5 @@
 import { Actor, ActorArgs, Color, Engine, Label, Vector } from "excalibur";
-import { world } from "../world";
+import { world } from "../GOAP stuff/World/world";
 
 const fireConfig: ActorArgs = {
   pos: new Vector(150, 100),

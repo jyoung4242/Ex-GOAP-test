@@ -1,6 +1,6 @@
 import { GoapAction, GoapActionConfig, actionstate } from "../GOAP";
 import { Entity } from "excalibur";
-import { player } from "../Actors";
+import { player } from "../../Actors";
 
 const myAction = (player: Entity, world: actionstate): Promise<void> => {
   return new Promise(resolve => {

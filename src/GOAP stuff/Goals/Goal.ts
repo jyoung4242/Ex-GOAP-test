@@ -1,4 +1,4 @@
-import { GoapGoal, GoapGoalConfig, actionstate } from "./GOAP";
+import { GoapGoal, GoapGoalConfig, actionstate } from "../GOAP";
 
 const goalConfig: GoapGoalConfig = {
   name: "keepfirealive",
