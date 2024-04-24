@@ -11,31 +11,31 @@ const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
         resolve();
       }
     });
-    player.actions.easeTo(new Vector(world.treePosition.x - 20, world.treePosition.y - 20), 1500, EasingFunctions.EaseInOutQuad);
+    player.actions.easeTo(new Vector(world.tree2Position.x - 20, world.tree2Position.y - 20), 1500, EasingFunctions.EaseInOutQuad);
   });
 };
 
 const distance = (world: actionstate): number => {
-  return world.playerPosition.distance(world.treePosition);
+  return world.playerPosition.distance(world.tree2Position);
 };
 
 const actionConfig: GoapActionConfig = {
-  name: "mtTree",
+  name: "mtTree2",
   cost: distance(world),
   effect: world => {
-    world.playerPosition = new Vector(world.treePosition.x - 20, world.treePosition.y - 20);
-    world.playerState = playerState.movingToTree1;
+    world.playerPosition = new Vector(world.tree2Position.x - 20, world.tree2Position.y - 20);
+    world.playerState = playerState.movingToTree2;
   },
   precondition: world => {
     return (
       world.player <= 5 &&
-      world.playerPosition.distance(world.treePosition) > 30 &&
+      world.playerPosition.distance(world.tree2Position) > 30 &&
       world.campfire <= 10 &&
-      (world.playerState == playerState.feedingFire || world.playerState == playerState.idle)
+      (world.playerState === playerState.feedingFire || world.playerState === playerState.idle)
     );
   },
   action: myAction,
   entity: player,
 };
 
-export const moveToTreeAction = new GoapAction(actionConfig);
+export const moveToTree2Action = new GoapAction(actionConfig);

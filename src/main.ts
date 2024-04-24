@@ -1,9 +1,18 @@
 import "./style.css";
 
 import { UI } from "@peasy-lib/peasy-ui";
-import { Engine, DisplayMode, KeyEvent, Debug, TestClock } from "excalibur";
-import { player, fire, tree } from "./Actors";
-import { waitAction, moveToFireAction, moveToTreeAction, feedFireAction, collectWoodAction, resetAction } from "./GOAP stuff/Actions";
+import { Engine, DisplayMode } from "excalibur";
+import { player, fire, tree, tree2, tree3 } from "./Actors";
+import {
+  moveToFireAction,
+  moveToTreeAction,
+  feedFireAction,
+  collectWoodAction,
+  moveToTree2Action,
+  moveToTree3Action,
+  collectWood2Action,
+  collectWood3Action,
+} from "./GOAP stuff/Actions";
 
 const model = {};
 const template = `
@@ -27,10 +36,24 @@ const game = new Engine({
   displayMode: DisplayMode.Fixed, // the display mode
 });
 
+game.timescale = 1.0;
 await game.start();
 game.add(tree);
+game.add(tree2);
+game.add(tree3);
 game.add(fire);
 game.add(player);
-player.goapActions = [feedFireAction, collectWoodAction, moveToTreeAction, moveToFireAction, waitAction, resetAction];
+
+player.goapActions = [
+  feedFireAction,
+  collectWoodAction,
+  moveToTreeAction,
+  moveToFireAction,
+  moveToTree2Action,
+  collectWood2Action,
+  moveToTree3Action,
+  collectWood3Action,
+];
+
 player.initialize();
 player.isRunning = true;

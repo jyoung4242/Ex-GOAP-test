@@ -1,13 +1,7 @@
 import { ExcaliburGraph, GraphNode } from "@excaliburjs/plugin-pathfinding";
-import { Action, ActionCompleteEvent, ActionQueue, Actor, ActorArgs, Entity } from "excalibur";
+import { Action, ActionQueue, Actor, ActorArgs } from "excalibur";
 
-/*
-TODO
-- modify GoapAction to not be an action
-- modify goapAgent to NOT use the action queue
-- add a 'execute' method to goapAction
-
-*/
+import cytoscape from "./cyto";
 
 /**
  *
@@ -27,6 +21,7 @@ TODO
  * effectCallback - callback that is passed to an action to modify the worldstate
  * preconditionCallback - The precondition callback that is passed to an action to determine if the action can be done
  */
+
 export type actionstate = Record<string, any>;
 export type effectCallback = (worldstate: actionstate, agentState?: actionstate) => void;
 export type preconditionCallback = (worldstate: actionstate, agentState?: actionstate) => boolean;
@@ -50,12 +45,16 @@ export interface GoapAgentConfig {
   goals: GoapGoal[];
   actorConfig: ActorArgs;
   onNewPlan: (s: actionstate) => void;
+  delayedPlanning?: number;
+  debugMode?: boolean;
 }
 export interface GoapPlannerConfig {
+  agent: GoapAgent;
   world: actionstate;
   agentState: actionstate;
   goals: GoapGoal[];
   actions: GoapAction[];
+  mode?: boolean;
 }
 export interface GoapActionConfig {
   entity: GoapAgent;
@@ -98,6 +97,10 @@ export class GoapAgent extends Actor {
   plan: GoapAction[] = [];
   queue: ActionQueue | undefined;
   cancelPlanFlag = false;
+  planningTiks = 0;
+  planningSchedule = 0;
+  debug = false;
+  firstTime = true;
 
   constructor(input: GoapAgentConfig) {
     super(input.actorConfig);
@@ -106,6 +109,8 @@ export class GoapAgent extends Actor {
     this.goapActions = input.actions;
     this.world = input.world;
     this.plan = [];
+    if (input.delayedPlanning && input.delayedPlanning != 0) this.planningSchedule = input.delayedPlanning;
+    if (input.debugMode) this.debug = true;
   }
 
   cancelPlan() {
@@ -114,14 +119,32 @@ export class GoapAgent extends Actor {
   }
 
   initialize() {
-    this.planner = new GoapPlanner({ world: this.world, agentState: this.state, goals: this.goals, actions: this.goapActions });
+    this.planner = new GoapPlanner({
+      agent: this,
+      world: this.world,
+      agentState: this.state,
+      goals: this.goals,
+      actions: this.goapActions,
+      mode: this.debug,
+    });
   }
 
   async onPostUpdate() {
     if (!this.isRunning || !this.planner) return;
+    if (this.debug && !this.firstTime) return;
 
     if (this.plan.length === 0) {
-      this.plan = this.planner.plan();
+      if (this.planningSchedule > 0) {
+        this.planningTiks++;
+        if (this.planningTiks >= this.planningSchedule) {
+          this.planningTiks = 0;
+          this.plan = this.planner.plan();
+          this.firstTime = false;
+        }
+      } else {
+        this.plan = this.planner.plan();
+        this.firstTime = false;
+      }
     } else {
       //run plan
       //grab first action, index 0 from plan
@@ -220,17 +243,22 @@ export class GoapAction {
  * @method modifyState - modify state, creates copy of state and returns new state object
  */
 export class GoapPlanner {
+  agent: GoapAgent;
   graph = new ExcaliburGraph();
   world: actionstate;
   agentState: actionstate;
   goals: GoapGoal[];
   actions: GoapAction[];
   numEndNodes = 0;
+  debug: boolean = false;
+
   constructor(input: GoapPlannerConfig) {
+    this.agent = input.agent;
     this.world = input.world;
     this.agentState = input.agentState;
     this.goals = input.goals;
     this.actions = input.actions;
+    if (input.mode) this.debug = true;
   }
 
   buildGraph(
@@ -240,7 +268,8 @@ export class GoapPlanner {
     graph: ExcaliburGraph,
     goal: GoapGoal,
     levelcount: number,
-    branch: number
+    branch: number,
+    depthLimit: number
   ) {
     let origState: actionstate = {};
     if (levelcount == 0) origState = Object.assign({}, worldstate);
@@ -253,31 +282,37 @@ export class GoapPlanner {
     for (let i = 0; i < useableActions.length; i++) {
       branchcnt = i;
 
-      let nodestring = `node -> level:${level} branch:${branchcnt}`;
+      let nodestring = `node: ${GOAP_UUID.generateUUID()} -> level:${level} branch:${branchcnt}`;
+
       const action = useableActions[i];
       if (level == 1) incomingstate = origState;
 
       const newState = this._modifyState(incomingstate, action.effect);
       const newuseableActions = this.actions.filter(action => action.isAchievable(newState));
-
+      //debugger;
       let nextnode;
 
       if (this._checkIfGoalReached(goal, newState)) {
-        graph.addNode({ id: `endnode_${this.numEndNodes}`, value: { world: newState, state: this.agentState, action: action } });
+        graph.addNode({
+          id: `endnode_${this.numEndNodes}`,
+          value: { world: newState, state: { incomingstate, newState }, action: action },
+        });
         nextnode = graph.getNodes().get(`endnode_${this.numEndNodes}`);
         const edgeString = `edge from:${startnode.id} to:endnode_${this.numEndNodes}`;
         graph.addEdge({ name: edgeString, from: startnode, to: nextnode!, value: action.cost });
         this.numEndNodes++;
         continue;
       } else {
-        graph.addNode({ id: nodestring, value: { world: incomingstate, state: this.agentState, action: action } });
+        graph.addNode({ id: nodestring, value: { world: incomingstate, state: { incomingstate, newState }, action: action } });
         nextnode = graph.getNodes().get(nodestring);
         const edgeString = `edge from:${startnode.id} to:${nextnode?.id}`;
         graph.addEdge({ name: edgeString, from: startnode, to: nextnode!, value: action.cost });
       }
       if (newuseableActions.length === 0) continue;
       const newStateCopy = Object.assign({}, newState);
-      this.buildGraph(nextnode!, newuseableActions, newStateCopy, graph, goal, level, branchcnt);
+
+      if (depthLimit > 0 && level > depthLimit) continue;
+      this.buildGraph(nextnode!, newuseableActions, newStateCopy, graph, goal, level, branchcnt, depthLimit);
     }
   }
 
@@ -356,29 +391,269 @@ export class GoapPlanner {
   }
 
   plan(): GoapAction[] {
-    //debugger;
     //pick best goal
     // best goal will be determined by highest weighting
 
     //reset all actions
     this.actions.forEach(action => action.reset());
 
-    const bestGoal = this.goals.reduce((prev, curr) => (prev.weighting(this.world) > curr.weighting(this.world) ? prev : curr));
+    //randomly pick a goal of the max weighting
+
+    let goalsTested = [];
+    let goalTestIndex = 0;
+    for (const goal of this.goals) {
+      goalsTested.push({ index: goalTestIndex, name: goal.name, weight: goal.weighting(this.world) });
+      goalTestIndex++;
+    }
+
+    const maxWeight = Math.max(...goalsTested.map(goal => goal.weight));
+
+    const maxWeightGoals = goalsTested.filter(goal => goal.weight === maxWeight);
+    const randomlySelectedGoalofMaxWeight = maxWeightGoals[Math.floor(Math.random() * maxWeightGoals.length)];
+    const bestGoal = this.goals.find(goal => goal.name === randomlySelectedGoalofMaxWeight.name)!;
+
     this.graph.resetGraph();
 
     //get list of usable actions
 
-    const useableActions = this.actions.filter(action => action.isAchievable(this.world));
-    if (useableActions.length === 0) throw new Error("No actions are achievable");
+    //debug
+    //const useableActions = this.actions.filter(action => action.isAchievable(this.world));
+
+    let useableActions = [];
+    for (const action of this.actions) {
+      if (action.isAchievable(this.world)) {
+        useableActions.push(action);
+      }
+    }
+    //debugger;
+    if (useableActions.length === 0) return [];
+
     this.graph.addNode({
       id: "startnode",
-      value: { world: this.world, state: this.agentState, action: null },
+      value: { world: this.world, state: { incomingstate: this.world, newstate: {} }, action: null },
     });
 
-    this.buildGraph(this.graph.getNodes().get("startnode")!, useableActions, this.world, this.graph, bestGoal, 0, 0);
+    this.buildGraph(this.graph.getNodes().get("startnode")!, useableActions, this.world, this.graph, bestGoal, 0, 0, 20);
     // iterate over tree graph and find cheapest path that satisfies all goals
-
+    //debugger;
     const actionplan = this._cheapestPath(this.graph);
+    if (this.debug) {
+      GOAP_PlanReport.generate(this.graph, actionplan, bestGoal, this.agent);
+    }
     return actionplan;
   }
+}
+
+/**
+ * Generates a UUID
+ * @returns {string}
+ * @memberof GOAP
+ */
+class GOAP_UUID {
+  static generateUUID(): string {
+    let uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+    return uuid.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+}
+
+class GOAP_PlanReport {
+  reportString: string = "";
+
+  static async generate(graph: ExcaliburGraph, actionplan: GoapAction[], goal: GoapGoal, agent: GoapAgent) {
+    let reportString;
+    reportString = `\n************************************************************************** \n`;
+    //append formated date string to report string
+    const now = Date.now();
+    const date = new Date(now);
+    reportString = reportString + `GOAP PLAN REPORT - Agent: ${agent.name} - When: ${date.toLocaleString()} \n`;
+    reportString = reportString + `**************************************************************************\n\n`;
+    console.info(reportString);
+
+    // add world state to report string
+    let world = graph.getNodes().get("startnode")!.value.state.incomingstate;
+    console.info(`World State: \n`, world);
+
+    console.info(`Selected Goal: \n`, goal);
+
+    let _plan = actionplan.map(act => act.name);
+
+    if (actionplan.length > 0) {
+      console.info(`Plan Generated: `, _plan);
+    } else {
+      console.warn("No plan generated");
+    }
+
+    console.log(`*****************************************************************`);
+    console.log(`Graph Generated: \n`);
+    console.log(`*****************************************************************`);
+
+    await GOAP_PlanReport.showGraph(graph);
+    await wait(2000);
+
+    for (const node of graph.getNodes()) {
+      if (node[0] == "startnode") {
+        let startNodeLogObject = {};
+        console.log(`Start Node:`);
+        //find where startnode is the .from node in each edge and list children to nodes
+        let childcount = 0;
+        for (const edge of graph.getEdges()) {
+          if (edge[1].from.id == node[0]) {
+            Object.assign(startNodeLogObject, {
+              [`Child ${childcount}`]: { node: edge[1].to.id, action: edge[1].to.value.action.name },
+            });
+            childcount++;
+          }
+        }
+        console.log("     Children: ", startNodeLogObject);
+      } else if (node[0].includes("endnode")) {
+        console.log(`*****************************************************************`);
+        console.log(`ENDNODE -  ${node[0]}  action -> ${node[1].value.action.name} \n`);
+        let nodeLogObject = {};
+        Object.assign(nodeLogObject, { incomingState: node[1].value.state.incomingstate });
+        Object.assign(nodeLogObject, { endingState: node[1].value.state.newState });
+        console.log("     Node Data: ", nodeLogObject);
+        console.log(`*****************************************************************`);
+      } else {
+        let nodeLogObject = {};
+        console.log(`NEXT NODE -  ${node[0]} action -> ${node[1].value.action.name} \n`);
+        let childcount = 0;
+        for (const edge of graph.getEdges()) {
+          if (edge[1].from.id == node[0]) {
+            Object.assign(nodeLogObject, { [`Child ${childcount}`]: { node: edge[1].to.id, action: edge[1].to.value.action.name } });
+            childcount++;
+          }
+        }
+        Object.assign(nodeLogObject, { incomingState: node[1].value.state.incomingstate });
+        Object.assign(nodeLogObject, { outgoingState: node[1].value.state.newState });
+        console.log("     Node Data: ", nodeLogObject);
+      }
+    }
+  }
+
+  static async showGraph(mygraph: ExcaliburGraph): Promise<void> {
+    //iterate over mygraph data to create the elements array to fee into the cytoscape graph
+    const elements: any[] = [];
+    const nodes = mygraph.getNodes();
+    const edges = mygraph.getEdges();
+
+    const newTab = document.createElement("div");
+
+    newTab.setAttribute("id", "cy");
+    newTab.setAttribute("style", "width: 500px; height: 500px; display: block; opacity: 0;");
+    newTab.setAttribute("width", "500px");
+    newTab.setAttribute("height", "500px");
+    window.document.body.appendChild(newTab);
+
+    for (const node of nodes) {
+      if (node[0] == "startnode") {
+        elements.push({
+          data: {
+            id: node[0],
+            description: "Start",
+            type: "startnode",
+          },
+        });
+      } else if (node[0].includes("endnode")) {
+        elements.push({
+          data: {
+            id: node[0],
+            description: `End - ${node[1].value.action.name}`,
+            type: "endnode",
+          },
+        });
+      } else {
+        elements.push({
+          data: {
+            id: node[0],
+            description: node[1].value.action.name,
+            type: "node",
+          },
+        });
+      }
+    }
+
+    for (const edge of edges) {
+      elements.push({
+        data: {
+          id: edge[0],
+          source: edge[1].from.id,
+          target: edge[1].to.id,
+        },
+      });
+    }
+
+    let cy = cytoscape({
+      container: newTab, // container to render in
+      elements: elements,
+      style: [
+        {
+          selector: "node",
+          style: {
+            "background-color": "#000",
+            label: "data(description)",
+          },
+        },
+        {
+          selector: "edge",
+          style: {
+            width: 3,
+            "line-color": "#000",
+            "target-arrow-color": "#000",
+            "target-arrow-shape": "triangle",
+          },
+        },
+      ],
+      layout: {
+        name: "breadthfirst",
+        fit: true,
+        center: true,
+        directed: true,
+      },
+    });
+
+    //modify background color of node based on type
+    cy.nodes().map((node: any) => {
+      if (node.data().type == "startnode") {
+        node.style("background-color", "green");
+      } else if (node.data().type == "endnode") {
+        node.style("background-color", "red");
+      } else {
+        node.style("background-color", "blue");
+      }
+    });
+
+    setTimeout(async () => {
+      cy.center();
+
+      let myimagePromise = await cy.png({
+        full: true,
+        bg: "white",
+        scale: 2,
+        output: "blob-promise",
+      });
+
+      var reader = new FileReader();
+      reader.readAsDataURL(myimagePromise);
+
+      reader.onloadend = function () {
+        var base64data = reader.result;
+        var style = [
+          "font-size: 1px;",
+          "padding: 250px 250px;",
+          `background: url(${base64data}) no-repeat;`,
+          "background-size: contain;",
+        ].join(" ");
+        console.log("%c ", style);
+        return;
+      };
+    }, 1000);
+  }
+}
+
+async function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

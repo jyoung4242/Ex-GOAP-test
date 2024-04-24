@@ -1,8 +1,8 @@
-import { Action, Actor, Entity, Blink, ActionCompleteEvent, World } from "excalibur";
+import { Action, ActionCompleteEvent, Actor, Blink, Entity } from "excalibur";
 import { GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate } from "../GOAP";
+import { tree } from "../../Actors/Tree";
 import { player } from "../../Actors/Player";
-import { fire } from "../../Actors/Fire";
-import { playerState } from "../World/world";
+import { playerState, world } from "../World/world";
 
 const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
   return new Promise(resolve => {
@@ -12,28 +12,28 @@ const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
         resolve();
       }
     });
-
     player.actions.blink(250, 250, 1);
   });
 };
 
 const actionConfig: GoapActionConfig = {
-  name: "feedFire",
+  name: "collectWood3",
   cost: 1,
   effect: world => {
-    world.campfire += 5;
-    world.player -= 5;
-    world.playerState = playerState.feedingFire;
+    world.tree3 -= 5;
+    world.player += 5;
+    world.playerState = playerState.collectingWood3;
   },
   precondition: world => {
     return (
-      world.playerPosition.distance(world.firePosition) < 30 &&
-      world.player > 0 &&
-      (world.playerState === playerState.movingToFire || world.playerState === playerState.feedingFire)
+      world.playerPosition.distance(world.tree3Position) < 30 &&
+      world.tree3 > 0 &&
+      world.player < 25 &&
+      (world.playerState === playerState.movingToTree3 || world.playerState === playerState.collectingWood3)
     );
   },
-  action: myAction,
   entity: player,
+  action: myAction,
 };
 
-export const feedFireAction = new GoapAction(actionConfig);
+export const collectWood3Action = new GoapAction(actionConfig);

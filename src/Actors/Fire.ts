@@ -30,14 +30,12 @@ class Fire extends Actor {
 
   onPostUpdate(engine: Engine<any>, delta: number): void {
     if (world.campfire > 0) {
-      this.colorflashtik += delta;
-      if (this.colorflashtik > this.colorflashlimit) {
-        if (this.color.equal(Color.Red)) {
-          this.color = Color.Orange;
-        } else {
-          this.color = Color.Red;
-        }
-        this.colorflashtik = 0;
+      if (world.campfire > 18) {
+        this.color = Color.Yellow;
+      } else if (world.campfire > 10) {
+        this.color = Color.Orange;
+      } else {
+        this.color = Color.Red;
       }
 
       this.burnTimerTik += delta;

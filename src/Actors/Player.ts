@@ -1,9 +1,10 @@
 import { ActorArgs, Color, Engine, Label, Vector } from "excalibur";
 import { GoapAction, GoapAgent, GoapAgentConfig, actionstate } from "../GOAP stuff/GOAP";
 import { world } from "../GOAP stuff/World/world";
-import { goal, resetGoal, waitGoal } from "../GOAP stuff/Goals/Goal";
+import { goal } from "../GOAP stuff/Goals/Goal";
 
 const playerActorConfig: ActorArgs = {
+  name: "player",
   pos: new Vector(300, 250),
   width: 16,
   height: 16,
@@ -21,9 +22,11 @@ const playerConfig: GoapAgentConfig = {
   world: world,
   state: {},
   actions: [],
-  goals: [resetGoal, waitGoal, goal], //resetGoal, waitGoal,
+  goals: [goal], //resetGoal, waitGoal,
   actorConfig: playerActorConfig,
   onNewPlan: loadPlayerActionQueue,
+  delayedPlanning: 10,
+  debugMode: true,
 };
 
 class playerLabel extends Label {

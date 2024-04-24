@@ -1,6 +1,7 @@
 import { ActionCompleteEvent, EaseTo, EasingFunctions, Vector } from "excalibur";
 import { GoapAction, GoapActionConfig, GoapAgent, actionstate } from "../GOAP";
 import { player } from "../../Actors";
+import { playerState } from "../World/world";
 
 const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
   return new Promise(resolve => {
@@ -20,9 +21,18 @@ const actionConfig: GoapActionConfig = {
   cost: 5,
   effect: world => {
     world.playerPosition = new Vector(world.firePosition.x + 20, world.firePosition.y + 20);
+    world.playerState = playerState.movingToFire;
   },
   precondition: world => {
-    return world.player >= 25 && world.playerPosition.distance(world.treePosition) < 30;
+    return (
+      world.player >= 25 &&
+      (world.playerPosition.distance(world.treePosition) < 30 ||
+        world.playerPosition.distance(world.tree2Position) < 30 ||
+        world.playerPosition.distance(world.tree3Position) < 30) &&
+      (world.playerState === playerState.collectingWood1 ||
+        world.playerState === playerState.collectingWood2 ||
+        world.playerState === playerState.collectingWood3)
+    );
   },
   action: myAction,
   entity: player,
