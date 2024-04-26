@@ -18,19 +18,20 @@ const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
 
 const actionConfig: GoapActionConfig = {
   name: "collectWood3",
-  cost: 1,
+  cost: () => {
+    return 1;
+  },
   effect: world => {
     world.tree3 -= 5;
     world.player += 5;
     world.playerState = playerState.collectingWood3;
   },
   precondition: world => {
-    return (
-      world.playerPosition.distance(world.tree3Position) < 30 &&
-      world.tree3 > 0 &&
-      world.player < 25 &&
-      (world.playerState === playerState.movingToTree3 || world.playerState === playerState.collectingWood3)
-    );
+    let nearTree3 = world.playerPosition.distance(world.tree3Position) < 30;
+    let isTreeEmpty = world.tree3 <= 0;
+    let isPlayerFull = world.player >= 25;
+    let isReadyToCollectWood = world.playerState == playerState.movingToTree3 || world.playerState == playerState.collectingWood3;
+    return nearTree3 && !isTreeEmpty && !isPlayerFull && isReadyToCollectWood;
   },
   entity: player,
   action: myAction,

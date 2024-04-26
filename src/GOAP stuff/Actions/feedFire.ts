@@ -19,18 +19,23 @@ const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
 
 const actionConfig: GoapActionConfig = {
   name: "feedFire",
-  cost: 1,
+  cost: () => {
+    return 1;
+  },
   effect: world => {
     world.campfire += 5;
     world.player -= 5;
+
     world.playerState = playerState.feedingFire;
+    if (world.player <= 0) {
+      world.playerState = playerState.idle;
+    }
   },
   precondition: world => {
-    return (
-      world.playerPosition.distance(world.firePosition) < 30 &&
-      world.player > 0 &&
-      (world.playerState === playerState.movingToFire || world.playerState === playerState.feedingFire)
-    );
+    let isPlayerEmpty = world.player <= 0;
+    let isPlayerNearFire = world.playerPosition.distance(world.firePosition) < 30;
+    let isPlayerReadyToFeedFire = world.playerState === playerState.movingToFire || world.playerState === playerState.feedingFire;
+    return !isPlayerEmpty && isPlayerNearFire && isPlayerReadyToFeedFire;
   },
   action: myAction,
   entity: player,

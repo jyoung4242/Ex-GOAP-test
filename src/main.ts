@@ -1,8 +1,8 @@
 import "./style.css";
 
 import { UI } from "@peasy-lib/peasy-ui";
-import { Engine, DisplayMode } from "excalibur";
-import { player, fire, tree, tree2, tree3 } from "./Actors";
+import { Engine, DisplayMode, Color } from "excalibur";
+import { player, fire, tree, tree2, tree3, bearActor, cabin } from "./Actors";
 import {
   moveToFireAction,
   moveToTreeAction,
@@ -13,6 +13,9 @@ import {
   collectWood2Action,
   collectWood3Action,
 } from "./GOAP stuff/Actions";
+
+import { runAwayAction } from "./GOAP stuff/Actions/runaway";
+import { relaxAction } from "./GOAP stuff/Actions/relax";
 
 const model = {};
 const template = `
@@ -34,15 +37,18 @@ const game = new Engine({
   height: 600, // the height of the canvas
   canvasElementId: "cnv", // the DOM canvas element ID, if you are providing your own
   displayMode: DisplayMode.Fixed, // the display mode
+  backgroundColor: Color.fromHex("#3CA03C"),
 });
 
-game.timescale = 1.0;
+game.timescale = 1.2;
 await game.start();
 game.add(tree);
 game.add(tree2);
 game.add(tree3);
 game.add(fire);
 game.add(player);
+game.add(bearActor);
+game.add(cabin);
 
 player.goapActions = [
   feedFireAction,
@@ -53,7 +59,15 @@ player.goapActions = [
   collectWood2Action,
   moveToTree3Action,
   collectWood3Action,
+  runAwayAction,
+  relaxAction,
 ];
 
 player.initialize();
 player.isRunning = true;
+
+game.currentScene.input.keyboard.on("press", key => {
+  if (key.key == "Space") {
+    game.clock.stop();
+  }
+});
