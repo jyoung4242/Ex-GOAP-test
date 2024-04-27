@@ -1,8 +1,26 @@
-import { Actor, ActorArgs, Color, Engine, Label, Vector } from "excalibur";
+import { Actor, ActorArgs, Color, Engine, ImageSource, Label, Sprite, Vector } from "excalibur";
 import { world } from "../GOAP stuff/World/world";
+//@ts-ignore
+import fireSprite from "../assets/campfire.png";
+
+const image = new ImageSource(fireSprite);
+
+const firesprite = new Sprite({
+  image: image,
+  sourceView: {
+    // Take a small slice of the source image starting at pixel (10, 10) with dimension 20 pixels x 20 pixels
+    x: 0,
+    y: 0,
+    width: 20,
+    height: 20,
+  },
+  destSize: { width: 20, height: 20 },
+});
+
+await image.load();
 
 const fireConfig: ActorArgs = {
-  pos: new Vector(150, 100),
+  pos: new Vector(400, 300),
   width: 16,
   height: 16,
   color: Color.Red,
@@ -30,14 +48,6 @@ class Fire extends Actor {
 
   onPostUpdate(engine: Engine<any>, delta: number): void {
     if (world.campfire > 0) {
-      if (world.campfire > 18) {
-        this.color = Color.Yellow;
-      } else if (world.campfire > 10) {
-        this.color = Color.Orange;
-      } else {
-        this.color = Color.Red;
-      }
-
       this.burnTimerTik += delta;
       if (this.burnTimerTik > this.burnTimerLimit) {
         world.campfire -= 5;
@@ -49,3 +59,4 @@ class Fire extends Actor {
 
 export const fire = new Fire(fireConfig);
 fire.addChild(new FireLabel());
+fire.graphics.add(firesprite);

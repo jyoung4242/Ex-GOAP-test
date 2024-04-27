@@ -1,10 +1,9 @@
 import { Action, Actor, Entity, Blink, ActionCompleteEvent, World } from "excalibur";
 import { GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate } from "../GOAP";
 import { player } from "../../Actors/Player";
-import { fire } from "../../Actors/Fire";
 import { playerState } from "../World/world";
 
-const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
+const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionstate): Promise<void> => {
   return new Promise(resolve => {
     const actionSub = player.events.on("actioncomplete", (e: ActionCompleteEvent) => {
       if (e.target === player && e.action instanceof Blink) {
@@ -19,18 +18,25 @@ const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
 
 const actionConfig: GoapActionConfig = {
   name: "feedFire",
-  cost: 1,
+  cost: () => {
+    return 1;
+  },
+  timeout: 2000,
   effect: world => {
-    world.campfire += 5;
-    world.player -= 5;
+    if (world.player != 0) {
+      world.player -= 5;
+      world.campfire += 5;
+    }
+
     world.playerState = playerState.feedingFire;
+    if (world.player <= 0) {
+      world.playerState = playerState.idle;
+    }
   },
   precondition: world => {
-    return (
-      world.playerPosition.distance(world.firePosition) < 30 &&
-      world.player > 0 &&
-      (world.playerState === playerState.movingToFire || world.playerState === playerState.feedingFire)
-    );
+    let isPlayerEmpty = world.player == 0;
+    let isPlayerReadyToFeedFire = world.playerState === playerState.movingToFire || world.playerState === playerState.feedingFire;
+    return !isPlayerEmpty && isPlayerReadyToFeedFire;
   },
   action: myAction,
   entity: player,

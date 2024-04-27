@@ -1,5 +1,23 @@
-import { Actor, ActorArgs, Color, Engine, Label, Vector } from "excalibur";
+import { Actor, ActorArgs, Color, Engine, ImageSource, Label, Sprite, Vector } from "excalibur";
 import { world } from "../GOAP stuff/World/world";
+//@ts-ignore
+import treeSprite from "../assets/tree.png";
+
+const image = new ImageSource(treeSprite);
+
+const treesprite = new Sprite({
+  image: image,
+  sourceView: {
+    // Take a small slice of the source image starting at pixel (10, 10) with dimension 20 pixels x 20 pixels
+    x: 0,
+    y: 0,
+    width: 20,
+    height: 20,
+  },
+  destSize: { width: 20, height: 20 },
+});
+
+await image.load();
 
 const treeConfig: ActorArgs = {
   name: "tree2",
@@ -19,6 +37,13 @@ class TreeLabel extends Label {
   }
 }
 
+class TreeLabel2 extends Label {
+  constructor() {
+    super({ text: "Tree2", pos: new Vector(-15, 20) });
+    this.color = Color.White;
+  }
+}
+
 class Tree2 extends Actor {
   constructor(treeConfig: ActorArgs) {
     super(treeConfig);
@@ -27,3 +52,5 @@ class Tree2 extends Actor {
 
 export const tree2 = new Tree2(treeConfig);
 tree2.addChild(new TreeLabel());
+tree2.addChild(new TreeLabel2());
+tree2.graphics.add(treesprite);

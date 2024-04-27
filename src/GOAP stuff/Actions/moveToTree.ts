@@ -1,38 +1,44 @@
 import { ActionCompleteEvent, EaseTo, EasingFunctions, Vector } from "excalibur";
-import { GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate } from "../GOAP";
-import { playerState, world } from "../World/world";
-import { player } from "../../Actors";
+import { GOAP_UUID, GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate, costCallback } from "../GOAP";
+import { playerState } from "../World/world";
+import { bearActor, player, tree } from "../../Actors";
+import { MyEaseTo } from "../../main";
 
-const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
+const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionstate): Promise<void> => {
+  const myUUID = GOAP_UUID.generateUUID();
   return new Promise(resolve => {
     const actionSub = player.events.on("actioncomplete", (e: ActionCompleteEvent) => {
-      if (e.target === player && e.action instanceof EaseTo) {
+      if (e.target === player && e.action instanceof MyEaseTo && e.action.UUID === myUUID) {
         actionSub.close();
         resolve();
       }
     });
-    player.actions.easeTo(new Vector(world.treePosition.x - 20, world.treePosition.y - 20), 1500, EasingFunctions.EaseInOutQuad);
+
+    let pAction = new MyEaseTo(player, new Vector(tree.pos.x - 20, tree.pos.y - 20), 1500, myUUID);
+    player.actions.runAction(pAction);
   });
 };
 
-const distance = (world: actionstate): number => {
-  return world.playerPosition.distance(world.treePosition);
+const distance: costCallback = (agent: GoapAgent, world: actionstate): number => {
+  return player.pos.distance(tree.pos);
 };
 
 const actionConfig: GoapActionConfig = {
   name: "mtTree",
-  cost: distance(world),
+  cost: distance,
+  timeout: 6000,
   effect: world => {
-    world.playerPosition = new Vector(world.treePosition.x - 20, world.treePosition.y - 20);
     world.playerState = playerState.movingToTree1;
   },
   precondition: world => {
-    return (
-      world.player <= 5 &&
-      world.playerPosition.distance(world.treePosition) > 30 &&
-      world.campfire <= 10 &&
-      (world.playerState == playerState.feedingFire || world.playerState == playerState.idle)
-    );
+    let isPlayerEmpty = world.player == 0;
+    let isBearNearTree = bearActor.pos.distance(tree.pos) < 50;
+    let isFireLow = world.campfire <= 15;
+    let isReadyToCollectWood =
+      world.playerState == playerState.feedingFire ||
+      world.playerState == playerState.idle ||
+      world.playerState == playerState.inCabin;
+    return isPlayerEmpty && !isBearNearTree && isFireLow && isReadyToCollectWood;
   },
   action: myAction,
   entity: player,

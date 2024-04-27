@@ -4,7 +4,7 @@ import { tree } from "../../Actors/Tree";
 import { player } from "../../Actors/Player";
 import { playerState, world } from "../World/world";
 
-const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
+const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionstate): Promise<void> => {
   return new Promise(resolve => {
     const actionSub = player.events.on("actioncomplete", (e: ActionCompleteEvent) => {
       if (e.target === player && e.action instanceof Blink) {
@@ -18,19 +18,20 @@ const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
 
 const actionConfig: GoapActionConfig = {
   name: "collectWood",
-  cost: 1,
+  cost: () => {
+    return 1;
+  },
+  timeout: 2000,
   effect: world => {
     world.tree -= 5;
     world.player += 5;
     world.playerState = playerState.collectingWood1;
   },
   precondition: world => {
-    return (
-      world.playerPosition.distance(world.treePosition) < 30 &&
-      world.tree > 0 &&
-      world.player < 25 &&
-      (world.playerState === playerState.movingToTree1 || world.playerState === playerState.collectingWood1)
-    );
+    let isTreeEmpty = world.tree <= 0;
+    let isPlayerFull = world.player >= 25;
+    let isReadyToCollectWood = world.playerState == playerState.movingToTree1 || world.playerState == playerState.collectingWood1;
+    return !isTreeEmpty && !isPlayerFull && isReadyToCollectWood;
   },
   entity: player,
   action: myAction,
