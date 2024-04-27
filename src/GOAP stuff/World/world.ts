@@ -1,5 +1,3 @@
-import { Vector } from "excalibur";
-
 export enum playerState {
   idle = "idle",
   movingToTree1 = "movingToTree1",

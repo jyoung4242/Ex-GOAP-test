@@ -1,8 +1,7 @@
-import { Actor, ActorArgs, Color, Engine, ImageSource, Label, Sprite, Vector } from "excalibur";
-import { world } from "../GOAP stuff/World/world";
+import { Actor, ActorArgs, ImageSource, Sprite, Vector } from "excalibur";
+
 //@ts-ignore
 import cabinImage from "../assets/cabin.png";
-
 const image = new ImageSource(cabinImage);
 
 const cabinsprite = new Sprite({
@@ -16,7 +15,6 @@ const cabinsprite = new Sprite({
   },
   destSize: { width: 20, height: 20 },
 });
-
 await image.load();
 
 const cabinConfig: ActorArgs = {

@@ -1,14 +1,10 @@
-import { ActionCompleteEvent, Actor, ActorArgs, Color, EaseTo, EasingFunctions, Engine, ImageSource, Sprite, Vector } from "excalibur";
-import { player } from "./Player";
+import { ActionCompleteEvent, Actor, ActorArgs, EaseTo, EasingFunctions, Engine, ImageSource, Sprite, Vector } from "excalibur";
+import { tree, cabin, tree2, tree3, player, fire } from "./index";
 
 //@ts-ignore
 import bear from "../assets/bear.png";
+
 import { playerState, world } from "../GOAP stuff/World/world";
-import { cabin } from "./cabin";
-import { tree3 } from "./Tree3";
-import { fire } from "./Fire";
-import { tree } from "./Tree";
-import { tree2 } from "./Tree2";
 
 const image = new ImageSource(bear);
 
@@ -63,7 +59,7 @@ class Bear extends Actor {
       random: "random",
     };
 
-    if (target[random] === "random") this.targetPosition = new Vector(Math.random() * 800, Math.random() * 600);
+    if (target[random] === "random") this.targetPosition = new Vector(Math.random() * 745 + 15, Math.random() * 545 + 15);
     //@ts-ignore
     else this.targetPosition = new Vector(lookup[target[random]].x, lookup[target[random]].y);
     this.targetPosition.x -= 20;
@@ -72,7 +68,6 @@ class Bear extends Actor {
 
   onPostUpdate(engine: Engine<any>, delta: number): void {
     //update worldstate for bear position
-
     world.bearDistance = this.pos.distance(player.pos);
 
     if (this.movingState === bearStates.idle) {
@@ -92,9 +87,14 @@ class Bear extends Actor {
 
     //cancel check for player
     //measure distance between bear and player
-    const distanceToPlayer = this.pos.distance(player.pos);
+
     let isPlayerInCabin = player.pos.equals(cabin.pos);
-    if (distanceToPlayer < 75 && this.cancelLatch === false && world.playerState != playerState.inCabin && isPlayerInCabin === false) {
+    if (
+      world.bearDistance < 75 &&
+      this.cancelLatch === false &&
+      world.playerState != playerState.inCabin &&
+      isPlayerInCabin === false
+    ) {
       this.cancelLatch = true;
       this.actions.clearActions();
       player.actions.clearActions();

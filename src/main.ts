@@ -72,11 +72,4 @@ player.goapActions = [
 ];
 
 player.initialize();
-player.isRunning = true;
-
-game.currentScene.input.keyboard.on("press", key => {
-  if (key.key == "Space") {
-    game.clock.stop();
-    debugger;
-  }
-});
+player.startGOAP();

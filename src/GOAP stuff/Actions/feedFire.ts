@@ -1,5 +1,5 @@
-import { Action, Actor, Entity, Blink, ActionCompleteEvent, World } from "excalibur";
-import { GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate } from "../GOAP";
+import { Blink, ActionCompleteEvent } from "excalibur";
+import { GoapAction, GoapActionConfig, GoapAgent, actionstate } from "../GOAP";
 import { player } from "../../Actors/Player";
 import { playerState } from "../World/world";
 
@@ -11,7 +11,6 @@ const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionsta
         resolve();
       }
     });
-
     player.actions.blink(250, 250, 1);
   });
 };
@@ -27,7 +26,6 @@ const actionConfig: GoapActionConfig = {
       world.player -= 5;
       world.campfire += 5;
     }
-
     world.playerState = playerState.feedingFire;
     if (world.player <= 0) {
       world.playerState = playerState.idle;

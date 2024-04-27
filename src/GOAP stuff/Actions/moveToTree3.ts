@@ -1,7 +1,7 @@
-import { ActionCompleteEvent, EaseTo, EasingFunctions, Vector } from "excalibur";
-import { GOAP_UUID, GoapAction, GoapActionConfig, GoapActionStatus, GoapAgent, actionstate, costCallback } from "../GOAP";
-import { playerState, world } from "../World/world";
-import { bearActor, cabin, player, tree3 } from "../../Actors";
+import { ActionCompleteEvent, Vector } from "excalibur";
+import { GOAP_UUID, GoapAction, GoapActionConfig, GoapAgent, actionstate, costCallback } from "../GOAP";
+import { playerState } from "../World/world";
+import { bearActor, player, tree3 } from "../../Actors";
 import { MyEaseTo } from "../../main";
 
 const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionstate): Promise<void> => {

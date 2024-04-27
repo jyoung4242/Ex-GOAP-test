@@ -1,14 +1,12 @@
 import { ExcaliburGraph, GraphNode } from "@excaliburjs/plugin-pathfinding";
 import { Action, ActionQueue, Actor, ActorArgs, Engine } from "excalibur";
-
 import cytoscape from "./cyto";
-import { playerState } from "./World/world";
 
 /**
  *
  * @module - GOAP AI Module
  * @author - Justin Young
- * @version - 0.0.1
+ * @version - 0.0.2
  * @description - A GOAP planner module that includes actions and goals
  * @license - BSD 2-Clause License
  * @copyright - Copyright (c) 2024
@@ -37,9 +35,10 @@ export enum GoapActionStatus {
 /**
  * @interfaces
  * @description - Interfaces for GOAP
- * iGoapAgent - Interface for GOAP agent
- * iGoapPlanner - Interface for GOAP planner
- *
+ * GoapAgentConfig - Interface for GOAP agent
+ * GoapPlannerConfig - Interface for GOAP planner
+ * GoapActionConfig - Interface for GOAP actions
+ * GoapGoalConfig - Interface for GOAP goals
  */
 export interface GoapAgentConfig {
   world: actionstate;
@@ -47,7 +46,6 @@ export interface GoapAgentConfig {
   actions: GoapAction[];
   goals: GoapGoal[];
   actorConfig: ActorArgs;
-  onNewPlan: (s: actionstate) => void;
   delayedPlanning?: number;
   debugMode?: boolean;
 }
@@ -82,6 +80,8 @@ export interface GoapGoalConfig {
  * GoapPlanner - Class for GOAP planner
  * GoapAction - Class for GOAP action
  * GoapGoal - Class for GOAP goal
+ * Goap_UUID - Class for GOAP UUID
+ * GOAP_PlanReport - Class for GOAP plan report
  */
 
 /**
@@ -118,13 +118,23 @@ export class GoapAgent extends Actor {
   }
 
   public cancelPlan() {
-    //debugger;
-
     this.plan.forEach((a: GoapAction) => {
       a.cancel();
     });
     this.plan = [];
     this.cancelPlanFlag = true;
+  }
+
+  get isGOAPRunning() {
+    return this.isRunning;
+  }
+
+  startGOAP() {
+    this.isRunning = true;
+  }
+
+  stopGOAP() {
+    this.isRunning = false;
   }
 
   initialize() {
@@ -197,11 +207,12 @@ export class GoapGoal {
  * @description - Class for GOAP action
  * @param input - Input configuration for the action.
  * @method isAchievable - is acheivable, returns true if the action can be done
+ * @method execute - executes the action
+ * @method cancel - cancels the action
+ * @method reset - resets the action
+ * @method update - updates the action
+ * @method getCost - get cost of the action
  */
-
-/*
-export class GoapAction implements Action 
-*/
 
 export class GoapAction {
   owner: GoapAgent;
@@ -263,11 +274,7 @@ export class GoapAction {
 /**
  * @description - Class for GOAP planner
  * @param input - Input configuration for the planner.
- * @method buildGraph - builds, node tree for DFS search for goal
- * @method cheapestPath - cheapest path, based on action cost
  * @method plan - starts building the plan, returns array of actions
- * @method checkIfGoalReached - check if goal reached
- * @method modifyState - modify state, creates copy of state and returns new state object
  */
 export class GoapPlanner {
   agent: GoapAgent;
@@ -288,7 +295,7 @@ export class GoapPlanner {
     if (input.mode) this.debug = true;
   }
 
-  buildGraph(
+  _buildGraph(
     startnode: GraphNode,
     useableActions: GoapAction[],
     worldstate: actionstate,
@@ -298,7 +305,6 @@ export class GoapPlanner {
     branch: number,
     depthLimit: number
   ) {
-    //if (goal.name == "keepfirealive") debugger;
     let origState: actionstate = {};
     if (levelcount == 0) origState = Object.assign({}, worldstate);
 
@@ -309,7 +315,6 @@ export class GoapPlanner {
 
     for (let i = 0; i < useableActions.length; i++) {
       branchcnt = i;
-      //debugger;
       let nodestring = `node: ${GOAP_UUID.generateUUID()} -> level:${level} branch:${branchcnt}`;
 
       const action = useableActions[i];
@@ -340,7 +345,7 @@ export class GoapPlanner {
       const newStateCopy = Object.assign({}, newState);
 
       if (depthLimit > 0 && level > depthLimit) continue;
-      this.buildGraph(nextnode!, newuseableActions, newStateCopy, graph, goal, level, branchcnt, depthLimit);
+      this._buildGraph(nextnode!, newuseableActions, newStateCopy, graph, goal, level, branchcnt, depthLimit);
     }
   }
 
@@ -419,11 +424,7 @@ export class GoapPlanner {
     const bestGoal = this.goals.find(goal => goal.name === randomlySelectedGoalofMaxWeight.name)!;
 
     this.graph.resetGraph();
-    /* 
-    if (bestGoal.name == "keepfirealive") {
-      debugger;
-    } */
-    //get list of usable actions
+
     let useableActions = [];
     for (const action of this.actions) {
       if (action.isAchievable(this.world)) {
@@ -438,7 +439,7 @@ export class GoapPlanner {
       value: { world: this.world, state: { incomingstate: this.world, newstate: {} }, action: null },
     });
 
-    this.buildGraph(this.graph.getNodes().get("startnode")!, useableActions, this.world, this.graph, bestGoal, 0, 0, 20);
+    this._buildGraph(this.graph.getNodes().get("startnode")!, useableActions, this.world, this.graph, bestGoal, 0, 0, 20);
     // iterate over tree graph and find cheapest path that satisfies all goals
 
     const actionplan = this._cheapestPath(this.graph);
@@ -450,9 +451,9 @@ export class GoapPlanner {
 }
 
 /**
- * Generates a UUID
- * @returns {string}
+ * @description - Generates a UUID
  * @memberof GOAP
+ * @method generateUUID - generates a UUID
  */
 export class GOAP_UUID {
   static generateUUID(): string {
@@ -464,6 +465,13 @@ export class GOAP_UUID {
     });
   }
 }
+
+/** *
+ * @description - Class for GOAP plan report
+ * @memberof GOAP
+ * @method generate - generates and consoles out a plan report
+ * @method showGraph - shows the graph in the console
+ */
 
 class GOAP_PlanReport {
   reportString: string = "";
