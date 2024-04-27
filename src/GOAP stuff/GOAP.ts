@@ -42,7 +42,6 @@ export enum GoapActionStatus {
  */
 export interface GoapAgentConfig {
   world: actionstate;
-  state: actionstate;
   actions: GoapAction[];
   goals: GoapGoal[];
   actorConfig: ActorArgs;
@@ -52,7 +51,6 @@ export interface GoapAgentConfig {
 export interface GoapPlannerConfig {
   agent: GoapAgent;
   world: actionstate;
-  agentState: actionstate;
   goals: GoapGoal[];
   actions: GoapAction[];
   mode?: boolean;
@@ -89,11 +87,12 @@ export interface GoapGoalConfig {
  * @param input - Input configuration for the agent.
  * @method cancelPlan - cancels the current plan
  * @method onPostUpdate - on post update (game loop update)
- * @method currentGoalFulfilled - current goal fulfilled
+ * @method inialize - setups up the Planner configuration
+ * @method startGOAP,stopGOAP - sets/clears the isRunning flag
+ * @getter isGOAPRunning - returns the isRunning flag
  */
 export class GoapAgent extends Actor {
   isRunning = false;
-  state: actionstate;
   world: actionstate;
   goals: GoapGoal[];
   goapActions: GoapAction[];
@@ -109,7 +108,6 @@ export class GoapAgent extends Actor {
   constructor(input: GoapAgentConfig) {
     super(input.actorConfig);
     this.goals = input.goals;
-    this.state = input.state;
     this.goapActions = input.actions;
     this.world = input.world;
     this.plan = [];
@@ -141,7 +139,6 @@ export class GoapAgent extends Actor {
     this.planner = new GoapPlanner({
       agent: this,
       world: this.world,
-      agentState: this.state,
       goals: this.goals,
       actions: this.goapActions,
       mode: this.debug,
@@ -280,7 +277,6 @@ export class GoapPlanner {
   agent: GoapAgent;
   graph = new ExcaliburGraph();
   world: actionstate;
-  agentState: actionstate;
   goals: GoapGoal[];
   actions: GoapAction[];
   numEndNodes = 0;
@@ -289,7 +285,6 @@ export class GoapPlanner {
   constructor(input: GoapPlannerConfig) {
     this.agent = input.agent;
     this.world = input.world;
-    this.agentState = input.agentState;
     this.goals = input.goals;
     this.actions = input.actions;
     if (input.mode) this.debug = true;

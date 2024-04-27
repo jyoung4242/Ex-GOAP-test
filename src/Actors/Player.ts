@@ -1,5 +1,5 @@
 import { ActorArgs, Color, Engine, ImageSource, Label, Sprite, Vector } from "excalibur";
-import { GoapAction, GoapAgent, GoapAgentConfig, actionstate } from "../GOAP stuff/GOAP";
+import { GoapAgent, GoapAgentConfig } from "../GOAP stuff/GOAP";
 import { world } from "../GOAP stuff/World/world";
 import { avoidBearGoal, goal } from "../GOAP stuff/Goals/Goal";
 
@@ -30,7 +30,6 @@ const playerActorConfig: ActorArgs = {
 
 const playerConfig: GoapAgentConfig = {
   world: world,
-  state: {},
   actions: [],
   goals: [goal, avoidBearGoal],
   actorConfig: playerActorConfig,
