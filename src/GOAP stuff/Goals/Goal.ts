@@ -1,7 +1,5 @@
-import { Vector } from "excalibur";
 import { GoapGoal, GoapGoalConfig, actionstate } from "../GOAP";
-import { playerState, world } from "../World/world";
-import { cabin } from "../../Actors";
+import { playerState } from "../World/world";
 
 const goalConfig: GoapGoalConfig = {
   name: "keepfirealive",

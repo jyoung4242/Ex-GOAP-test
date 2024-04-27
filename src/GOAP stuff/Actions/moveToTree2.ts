@@ -1,4 +1,4 @@
-import { ActionCompleteEvent, EaseTo, Vector } from "excalibur";
+import { ActionCompleteEvent, Vector } from "excalibur";
 import { GOAP_UUID, GoapAction, GoapActionConfig, GoapAgent, actionstate, costCallback } from "../GOAP";
 import { playerState } from "../World/world";
 import { bearActor, player, tree2 } from "../../Actors";

@@ -1,6 +1,6 @@
-import { ActionCompleteEvent, EaseTo, EasingFunctions, Vector } from "excalibur";
+import { ActionCompleteEvent, Vector } from "excalibur";
 import { GOAP_UUID, GoapAction, GoapActionConfig, GoapAgent, actionstate } from "../GOAP";
-import { bearActor, player, fire } from "../../Actors";
+import { player, fire } from "../../Actors";
 import { playerState } from "../World/world";
 import { MyEaseTo } from "../../main";
 

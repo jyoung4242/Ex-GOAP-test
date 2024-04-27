@@ -2,9 +2,9 @@ import { ActorArgs, Color, Engine, ImageSource, Label, Sprite, Vector } from "ex
 import { GoapAction, GoapAgent, GoapAgentConfig, actionstate } from "../GOAP stuff/GOAP";
 import { world } from "../GOAP stuff/World/world";
 import { avoidBearGoal, goal } from "../GOAP stuff/Goals/Goal";
+
 //@ts-ignore
 import jackSprite from "../assets/jack.png";
-
 const image = new ImageSource(jackSprite);
 
 const jacksprite = new Sprite({
@@ -28,21 +28,12 @@ const playerActorConfig: ActorArgs = {
   color: Color.Blue,
 };
 
-const loadPlayerActionQueue = (s: actionstate) => {
-  player.cancelPlan();
-  player.actions.clearActions();
-  player.plan.forEach((a: GoapAction) => {
-    console.log(a);
-  });
-};
-
 const playerConfig: GoapAgentConfig = {
   world: world,
   state: {},
   actions: [],
-  goals: [goal, avoidBearGoal], //resetGoal, waitGoal,
+  goals: [goal, avoidBearGoal],
   actorConfig: playerActorConfig,
-  onNewPlan: loadPlayerActionQueue,
   delayedPlanning: 10,
   debugMode: false,
 };
