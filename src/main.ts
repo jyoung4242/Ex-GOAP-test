@@ -1,7 +1,7 @@
 import "./style.css";
 
 import { UI } from "@peasy-lib/peasy-ui";
-import { Engine, DisplayMode, Color } from "excalibur";
+import { Engine, DisplayMode, Color, EaseTo, Vector, EasingFunctions, Actor } from "excalibur";
 import { player, fire, tree, tree2, tree3, bearActor, cabin } from "./Actors";
 import {
   moveToFireAction,
@@ -13,6 +13,14 @@ import {
   collectWood2Action,
   collectWood3Action,
 } from "./GOAP stuff/Actions";
+
+export class MyEaseTo extends EaseTo {
+  UUID: string = "";
+  constructor(who: Actor, where: Vector, duration: number, uuid: string) {
+    super(who, where.x, where.y, duration, EasingFunctions.EaseInOutQuad);
+    this.UUID = uuid;
+  }
+}
 
 import { runAwayAction } from "./GOAP stuff/Actions/runaway";
 import { relaxAction } from "./GOAP stuff/Actions/relax";
@@ -69,5 +77,6 @@ player.isRunning = true;
 game.currentScene.input.keyboard.on("press", key => {
   if (key.key == "Space") {
     game.clock.stop();
+    debugger;
   }
 });

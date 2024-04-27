@@ -5,6 +5,10 @@ import { player } from "./Player";
 import bear from "../assets/bear.png";
 import { playerState, world } from "../GOAP stuff/World/world";
 import { cabin } from "./cabin";
+import { tree3 } from "./Tree3";
+import { fire } from "./Fire";
+import { tree } from "./Tree";
+import { tree2 } from "./Tree2";
 
 const image = new ImageSource(bear);
 
@@ -46,16 +50,24 @@ class Bear extends Actor {
     super(input);
   }
 
-  getNewPosittion() {
+  getNewPosition() {
     const target: string[] = ["firePosition", "treePosition", "tree2Position", "tree3Position", "playerPosition", "random"];
     const random: number = Math.floor(Math.random() * target.length);
 
+    const lookup = {
+      firePosition: fire.pos,
+      treePosition: tree.pos,
+      tree2Position: tree2.pos,
+      tree3Position: tree3.pos,
+      playerPosition: player.pos,
+      random: "random",
+    };
+
     if (target[random] === "random") this.targetPosition = new Vector(Math.random() * 800, Math.random() * 600);
     //@ts-ignore
-    else this.targetPosition = new Vector(world[target[random]].x, world[target[random]].y);
+    else this.targetPosition = new Vector(lookup[target[random]].x, lookup[target[random]].y);
     this.targetPosition.x -= 20;
     this.targetPosition.y -= 20;
-    // this.targetPosition = new Vector(Math.random() * 800, Math.random() * 600);
   }
 
   onPostUpdate(engine: Engine<any>, delta: number): void {
@@ -67,7 +79,7 @@ class Bear extends Actor {
       this.idletik += delta;
       if (this.idletik > this.idlelimit) {
         this.idletik = 0;
-        this.getNewPosittion();
+        this.getNewPosition();
         this.movingState = bearStates.moving;
         this.events.on("actioncomplete", (e: ActionCompleteEvent) => {
           if (e.target === this && e.action instanceof EaseTo && this.movingState === bearStates.moving) {
@@ -81,18 +93,12 @@ class Bear extends Actor {
     //cancel check for player
     //measure distance between bear and player
     const distanceToPlayer = this.pos.distance(player.pos);
-    let isPlayerInCabin = world.playerPosition.equals(cabin.pos);
-    if (
-      distanceToPlayer < 100 &&
-      this.cancelLatch === false &&
-      world.playerState != playerState.inCabin &&
-      isPlayerInCabin === false
-    ) {
-      bear.blink(250, 250, 3);
-
+    let isPlayerInCabin = player.pos.equals(cabin.pos);
+    if (distanceToPlayer < 75 && this.cancelLatch === false && world.playerState != playerState.inCabin && isPlayerInCabin === false) {
       this.cancelLatch = true;
       this.actions.clearActions();
       player.actions.clearActions();
+
       player.cancelPlan();
       this.events.clear();
       this.movingState = bearStates.idle;

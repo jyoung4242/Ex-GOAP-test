@@ -6,3 +6,5 @@ export * from "./moveToTree2";
 export * from "./moveToTree3";
 export * from "./collectWood2";
 export * from "./collectWood3";
+export * from "./relax";
+export * from "./runaway";

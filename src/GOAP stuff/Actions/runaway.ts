@@ -5,7 +5,7 @@ import { player } from "../../Actors";
 import { bearActor } from "../../Actors/bear";
 import { cabin } from "../../Actors";
 
-const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
+const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionstate): Promise<void> => {
   return new Promise(resolve => {
     const actionSub = player.events.on("actioncomplete", (e: ActionCompleteEvent) => {
       if (e.target === player && e.action instanceof EaseTo) {
@@ -24,10 +24,9 @@ const actionConfig: GoapActionConfig = {
   cost: () => {
     return 5;
   },
+  timeout: 6000,
   effect: world => {
     world.playerState = playerState.runningAway;
-    world.playerPosition.x = cabin.pos.x;
-    world.playerPosition.y = cabin.pos.y;
   },
   precondition: world => {
     return world.bearDistance < 100 && world.playerState == playerState.scared;

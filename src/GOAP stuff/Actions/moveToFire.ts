@@ -1,33 +1,36 @@
 import { ActionCompleteEvent, EaseTo, EasingFunctions, Vector } from "excalibur";
-import { GoapAction, GoapActionConfig, GoapAgent, actionstate } from "../GOAP";
-import { cabin, player } from "../../Actors";
+import { GOAP_UUID, GoapAction, GoapActionConfig, GoapAgent, actionstate } from "../GOAP";
+import { bearActor, player, fire } from "../../Actors";
 import { playerState } from "../World/world";
+import { MyEaseTo } from "../../main";
 
-const myAction = (player: GoapAgent, world: actionstate): Promise<void> => {
+const myAction = (player: GoapAgent, currentAction: GoapAction, world: actionstate): Promise<void> => {
+  let myUUID = GOAP_UUID.generateUUID();
   return new Promise(resolve => {
     const actionSub = player.events.on("actioncomplete", (e: ActionCompleteEvent) => {
-      if (e.target === player && e.action instanceof EaseTo) {
+      if (e.target === player && e.action instanceof MyEaseTo && e.action.UUID === myUUID) {
         actionSub.close();
         resolve();
       }
     });
-
-    player.actions.easeTo(new Vector(world.firePosition.x + 20, world.firePosition.y + 20), 1500, EasingFunctions.EaseInOutQuad);
+    let pAction = new MyEaseTo(player, new Vector(fire.pos.x + 20, fire.pos.y + 20), 1500, myUUID);
+    player.actions.runAction(pAction);
   });
 };
 
 const actionConfig: GoapActionConfig = {
   name: "mtFire",
+  timeout: 6000,
   cost: () => {
     return 5;
   },
   effect: world => {
-    world.playerPosition = new Vector(world.firePosition.x + 20, world.firePosition.y + 20);
     world.playerState = playerState.movingToFire;
   },
   precondition: world => {
     let hasWood = world.player > 0;
     let isFull = world.player >= 25;
+
     let inCabin = world.playerState == playerState.inCabin;
     let readyToFeedFire =
       world.playerState == playerState.collectingWood1 ||

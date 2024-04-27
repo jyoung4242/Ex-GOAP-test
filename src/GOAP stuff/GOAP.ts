@@ -1,5 +1,5 @@
 import { ExcaliburGraph, GraphNode } from "@excaliburjs/plugin-pathfinding";
-import { Action, ActionQueue, Actor, ActorArgs } from "excalibur";
+import { Action, ActionQueue, Actor, ActorArgs, Engine } from "excalibur";
 
 import cytoscape from "./cyto";
 import { playerState } from "./World/world";
@@ -26,7 +26,7 @@ import { playerState } from "./World/world";
 export type actionstate = Record<string, any>;
 export type effectCallback = (worldstate: actionstate, agentState?: actionstate) => void;
 export type preconditionCallback = (worldstate: actionstate, agentState?: actionstate) => boolean;
-export type actionCallback = (actionEntity: GoapAgent, worldstate: actionstate) => Promise<void>;
+export type actionCallback = (actionEntity: GoapAgent, action: GoapAction, worldstate: actionstate) => Promise<void>;
 export type costCallback = (actionEntity: GoapAgent, worldstate: actionstate) => number;
 
 export enum GoapActionStatus {
@@ -66,6 +66,7 @@ export interface GoapActionConfig {
   effect: effectCallback;
   precondition: preconditionCallback;
   action: actionCallback;
+  timeout?: number;
 }
 
 export interface GoapGoalConfig {
@@ -119,7 +120,9 @@ export class GoapAgent extends Actor {
   public cancelPlan() {
     //debugger;
 
-    if (this.plan[0]) this.plan[0].cancel();
+    this.plan.forEach((a: GoapAction) => {
+      a.cancel();
+    });
     this.plan = [];
     this.cancelPlanFlag = true;
   }
@@ -135,7 +138,7 @@ export class GoapAgent extends Actor {
     });
   }
 
-  async onPostUpdate() {
+  async onPostUpdate(engine: Engine, deltaTime: number) {
     if (!this.isRunning || !this.planner) return;
     if (this.debug && !this.firstTime) return;
 
@@ -155,8 +158,13 @@ export class GoapAgent extends Actor {
       //run plan
       //grab first action, index 0 from plan
       const firstAction = this.plan[0];
-      if (firstAction.status === GoapActionStatus.busy) return;
-      await firstAction.execute(this.world);
+      if (firstAction.status === GoapActionStatus.busy) {
+        firstAction.update(deltaTime);
+        return;
+      } else {
+        await firstAction.execute(firstAction, this.world);
+      }
+
       firstAction.reset();
       //remove first action from plan
       this.plan.shift();
@@ -204,6 +212,8 @@ export class GoapAction {
   precondition: preconditionCallback;
   substitueAction: Action | undefined;
   action: actionCallback;
+  timeout: number = -1;
+  currentTime: number = 0;
 
   constructor(input: GoapActionConfig) {
     this.name = input.name;
@@ -212,26 +222,33 @@ export class GoapAction {
     this.precondition = input.precondition;
     this.action = input.action;
     this.owner = input.entity;
+    if (input.timeout) this.timeout = input.timeout;
   }
 
-  async execute(s: actionstate) {
+  async execute(action: GoapAction, s: actionstate) {
     if (this.status === GoapActionStatus.waiting) {
+      this.currentTime = 0;
       this.status = GoapActionStatus.busy;
-      await this.action(this.owner, s);
+      await this.action(this.owner, action, s);
       this.effect(s);
       this.status = GoapActionStatus.complete;
     }
   }
 
   getCost(state: actionstate): number {
-    //console.log(this.cost);
-    //console.log("state:", state);
-
-    //console.log("get cost", this.cost(this.owner, state));
     return this.cost(this.owner, state);
   }
 
+  update(deltaTime: number) {
+    this.currentTime += deltaTime;
+    if (this.currentTime >= this.timeout) {
+      console.error("Action Timed Out!", this.name);
+      this.status = GoapActionStatus.complete;
+    }
+  }
+
   reset(): void {
+    this.currentTime = 0;
     this.status = GoapActionStatus.waiting;
   }
   cancel(): void {
@@ -292,7 +309,7 @@ export class GoapPlanner {
 
     for (let i = 0; i < useableActions.length; i++) {
       branchcnt = i;
-
+      //debugger;
       let nodestring = `node: ${GOAP_UUID.generateUUID()} -> level:${level} branch:${branchcnt}`;
 
       const action = useableActions[i];
@@ -317,8 +334,6 @@ export class GoapPlanner {
         graph.addNode({ id: nodestring, value: { world: incomingstate, state: { incomingstate, newState }, action: action } });
         nextnode = graph.getNodes().get(nodestring);
         const edgeString = `edge from:${startnode.id} to:${nextnode?.id}`;
-        //"cost of action: ", action.name, action.getCost(newState));
-
         graph.addEdge({ name: edgeString, from: startnode, to: nextnode!, value: action.getCost(incomingstate) });
       }
       if (newuseableActions.length === 0) continue;
@@ -402,6 +417,7 @@ export class GoapPlanner {
     const maxWeightGoals = goalsTested.filter(goal => goal.weight === maxWeight);
     const randomlySelectedGoalofMaxWeight = maxWeightGoals[Math.floor(Math.random() * maxWeightGoals.length)];
     const bestGoal = this.goals.find(goal => goal.name === randomlySelectedGoalofMaxWeight.name)!;
+
     this.graph.resetGraph();
     /* 
     if (bestGoal.name == "keepfirealive") {
@@ -438,7 +454,7 @@ export class GoapPlanner {
  * @returns {string}
  * @memberof GOAP
  */
-class GOAP_UUID {
+export class GOAP_UUID {
   static generateUUID(): string {
     let uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
     return uuid.replace(/[xy]/g, function (c) {

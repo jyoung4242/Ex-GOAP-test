@@ -72,11 +72,6 @@ player.addChild(new playerLabel());
 player.addChild(new PlayerLabel2());
 player.graphics.add(jacksprite);
 
-player.onPreUpdate = (engine: Engine<any>, delta: number) => {
-  world.playerPosition.x = player.pos.x;
-  world.playerPosition.y = player.pos.y;
-};
-
 player.on("collisionstart", event => {
   if (event.other.name === "cabin") {
     player.graphics.visible = false;

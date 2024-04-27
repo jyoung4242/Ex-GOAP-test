@@ -37,6 +37,13 @@ class TreeLabel extends Label {
   }
 }
 
+class TreeLabel2 extends Label {
+  constructor() {
+    super({ text: "Tree1", pos: new Vector(-15, 20) });
+    this.color = Color.White;
+  }
+}
+
 class Tree extends Actor {
   constructor(treeConfig: ActorArgs) {
     super(treeConfig);
@@ -45,4 +52,5 @@ class Tree extends Actor {
 
 export const tree = new Tree(treeConfig);
 tree.addChild(new TreeLabel());
+tree.addChild(new TreeLabel2());
 tree.graphics.add(treesprite);
