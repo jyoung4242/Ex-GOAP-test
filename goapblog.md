@@ -9,6 +9,8 @@ I have been in need of an AI system that can execute a simulation that I desire 
 Goal-Oriented Action Planning. This technique can give me the flexibility I need to run my simulation, let's dive into the
 implementation a bit.
 
+[Link to GOAP Demo](https://mookie4242.itch.io/goap-ai-simulation-using-excaliburjs-engine)
+
 ## GOAP, what is it
 
 Goal-Oriented Action Planning, or GOAP, is a flexible AI technique that enables the developer build up a set of actions and objectives,
