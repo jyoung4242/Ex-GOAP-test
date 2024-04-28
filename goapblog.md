@@ -14,15 +14,15 @@ implementation a bit.
 Goal-Oriented Action Planning, or GOAP, is a flexible AI technique that enables the developer build up a set of actions and objectives,
 and allows the NPC (agent) itself determine what the best objective is, and how to accomplish said objective.
 
-GOAP includes the use of Agents, Goals, Actions, and State, to plan out its next series of moves. This is a useful system for
-Non-Playable Characters(NPCs) or enemy AI logic.
+GOAP includes the use of Agents, Goals, Actions, and State, to plan out its next series of decisions and activities. This is a useful
+system for Non-Playable Characters(NPCs) or enemy AI logic.
 
 ## Quick History
 
 GOAP was developed by Jeff Orkin in the early 2000's while working on the AI system for
 [F.E.A.R.](<https://en.wikipedia.org/wiki/F.E.A.R._(video_game)>)
 
-The desire was to generate NPC automated planning to create a more immersive game experience.
+The desire was to generate automated planning sequences for Enemies and NPCs to create a more immersive game experience.
 
 GOAP can be considered an alternative to classic behavioral trees, which was more standard at that time.
 
@@ -37,7 +37,7 @@ First, let's talk about State.
 ### State
 
 State is the data set conditions that describes the world in which an agent exists. For my implementation, an established set of
-key/value pair data that is used. A simple example of a world state:
+key/value pair data was used to fuel the simulation. A simple example of a world state:
 
 ```ts
 	world = {
@@ -81,7 +81,7 @@ Actions are very discrete units of activity:
 - Fire weapon
 - Duck
 
-And these actions will have a cost component, time or energy is common, and the actions will be linked together to form a sequence of
+These actions should have a cost component, time or energy is common, and the actions will be linked together to form a sequence of
 actions that constitutes 'plan'.
 
 What is unique about components of an action beyond cost, is the precondition and effect components. These are super important.
@@ -96,8 +96,8 @@ to clone and mutate the state as it churns through the different possible option
 
 ### Planner
 
-The planner is the algorithm that has several tasks. To use the Planner, you pass the current world state, all available actions for
-the agent, all available goals for the agent.
+The planner is the algorithm which generates the plan, and it has several tasks. To use the Planner, you pass the current world state,
+all available actions for the agent, all available goals for the agent.
 
 The planner's first task is to assess all available goals for the agent to determine which is the highest priority.
 
@@ -116,13 +116,13 @@ There are two aspects of the algorithm that should be discussed. The graph netwo
 
 ![Building the Graph](./src/assets/blogassets/goap%20network%20flow.png)
 
-The graph network is built with a recursion that forms a tree structure, and each branching is based on the new available list of
-actions that meet the mutated state condition, for that branch.
+The graph network is built with a recursion that forms a tree structure, and branching is based on the new available list of actions
+that meet the mutated state condition, for that branch.
 
 As you walk through each branch, the actions taken at each node will mutate the state. That mutated stated then gets checked against
 the goal provided, to see if you are done.
 
-If the goal passes, and endnode is created. If not, then that newly mutated state is used to generate the new list of available actions
+If the goal passes, an endnode is created. If not, then that newly mutated state is used to generate the new list of available actions
 and the recursion continues.
 
 The recursion ends when a branch's mutated state cannot create further list of actions, or the goal is met.
@@ -138,19 +138,19 @@ aggregate cost of each plan created.
 I use a [dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) to calculate, based on each actions 'cost', the
 cheapest path to execute.
 
-But there is flexibility here as well. There maybe be more extensibility into different costing structures, maybe you want to balance
-energy and time both?
-
+But there is flexibility here as well, including using different costing structures, maybe you want to balance energy and time both?
 Then you could construct a planner that favors one over the other based on conditions.
 
 ## The test
 
 ![Demo Test](./src/assets/blogassets/goap.png)
 
-I spent a couple weeks building a simulation of my GOAP library that I created. It is a simple "Actor feeds fire with wood, while
+[Link to Demo](https://mookie4242.itch.io/goap-ai-simulation-using-excaliburjs-engine)
+
+I spent a couple weeks building a simulation of my GOAP library that I created. It is a simple "actor feeds fire with wood, while
 avoiding bears" simulation.
 
-The Actor has two goals, "Keep Fire Alive", and "Avoid Bear"
+The Actor has two goals, "keep fire aive", and "avoid bear"
 
 If the actor is currently without a plan to execute, it passes its worldstate into the planner. The world state looks vaguely like
 this:
@@ -188,10 +188,10 @@ When the planner is fed these components, it assesses the priority of each actio
 is the bear close by?
 
 With the goal selected, it uses the state data to determine which actions to take, for the fire building, the first round of actions
-usually are moving to trees.
+usually are moving to trees. That is unless the player is holding some wood, then it will decide to just go to the fire directly.
 
-When the player is next to a tree, it then collects its wood, then it moves to fire, and feeds the fire, and it waits till the fire
-gets lower before going to collect more wood.
+If the player moves to a tree, it then collects its wood, then it moves to fire, and feeds the fire, and it waits till the fire gets
+lower before going to collect more wood.
 
 I mentioned earlier that agents have to be able to cancel their plans. If the bear comes close to the player, it triggers a
 cancelPlan() method and the player is forced to generate a new plan.
