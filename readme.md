@@ -56,7 +56,7 @@ Utilities:
 
 ## How does GOAP work
 
- <img src="src/goapprocess.png" alt="Logo" width="940" height="500">
+ <img src="src/assets/blogassets/goapprocess.png" alt="Logo" width="940" height="500">
 
 <!-- GETTING STARTED -->
 
